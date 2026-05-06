@@ -24,7 +24,8 @@ Sistema de trading algorítmico asíncrono para **Binance Futures (USDT-M)**, di
 ## 📦 Instalación
 
 1. **Clonar el repositorio:**
-   ```bash
+
+```bash
    git clone https://github.com/TU_USUARIO/binance-scalping-bot.git
    cd binance-scalping-bot
 
