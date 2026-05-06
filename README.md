@@ -112,9 +112,9 @@ Una vez iniciado el bot, accede desde tu navegador a:
 http://localhost:8000
 
 ## ⚙️ Parámetros del Bot
-EXECUTION_MODE: TESTNET (Pruebas), DRY_RUN (Simulación real), LIVE (Trading real).
-INITIAL_USDT_MARGIN: Monto base de inversión por operación.
-LEVERAGE: Apalancamiento configurado para el símbolo.
-MAX_RISK_PCT: Porcentaje del balance total que el bot arriesgará antes de ejecutar un Stop Loss global.
+- EXECUTION_MODE: TESTNET (Pruebas), DRY_RUN (Simulación real), LIVE (Trading real).
+- INITIAL_USDT_MARGIN: Monto base de inversión por operación.
+- LEVERAGE: Apalancamiento configurado para el símbolo.
+- MAX_RISK_PCT: Porcentaje del balance total que el bot arriesgará antes de ejecutar un Stop Loss global.
 ## ⚠️ Aviso de Riesgo
 Este software se proporciona "tal cual" y sin garantía de rentabilidad. El trading de criptomonedas y futuros implica un alto riesgo de pérdida de capital. Úselo primero en entornos de prueba (TESTNET o DRY_RUN) para validar su estrategia antes de operar con fondos reales.
