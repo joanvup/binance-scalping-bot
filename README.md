@@ -35,7 +35,8 @@ Sistema de trading algorítmico asíncrono para **Binance Futures (USDT-M)**, di
    pip install -r requirements.txt
 ```
 
-2. **Configuración**
+2. **Configuración:**
+
 Crea un archivo .env en la raíz del proyecto con las siguientes variables:
 ```bash
 BINANCE_API_KEY=tu_api_key
