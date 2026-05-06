@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binance Scalping Bot Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <!-- LIBRERIA TRADINGVIEW LIGHTWEIGHT CHARTS -->
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen font-sans pb-10">
+
+    <header class="bg-gray-800 border-b border-gray-700 p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-blue-400">🤖 Scalping Bot</h1>
+            <div class="flex items-center space-x-4">
+                <span class="px-3 py-1 bg-gray-700 rounded-full text-sm">Modo: <span
+                        class="font-bold text-yellow-400">{{ settings.EXECUTION_MODE }}</span></span>
+                <span class="px-3 py-1 bg-gray-700 rounded-full text-sm">{{ settings.SYMBOL }} | {{ settings.LEVERAGE
+                    }}x | Margen: ${{ settings.INITIAL_USDT_MARGIN }}</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 mt-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Tarjeta de Control -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+            <h2 class="text-lg font-semibold mb-4 text-gray-300">Control Principal</h2>
+            <div class="flex justify-between items-center mb-6">
+                <span class="text-gray-400">Estado del Bot:</span>
+                <span id="status-badge"
+                    class="px-3 py-1 bg-red-900 text-red-300 rounded-full text-sm font-bold animate-pulse">DETENIDO</span>
+            </div>
+            <button id="toggle-btn" onclick="toggleBot()"
+                class="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded font-bold transition-colors mb-4">
+                INICIAR BOT
+            </button>
+            <div class="flex justify-between py-1 border-t border-gray-700 pt-4">
+                <span class="text-gray-400">Precio Actual:</span>
+                <span id="last-price" class="font-mono font-bold">$0.00</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-gray-700 pb-4">
+                <span class="text-gray-400">Balance:</span>
+                <span id="balance" class="font-mono font-bold text-green-400">$0.00</span>
+            </div>
+        </div>
+
+        <!-- Tarjeta de Posición Actual -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700 md:col-span-2">
+            <h2 class="text-lg font-semibold mb-4 text-gray-300">Operación Activa</h2>
+            <div id="no-position" class="text-center text-gray-500 py-8">
+                Buscando oportunidades en el mercado...
+            </div>
+
+            <div id="active-position" class="hidden">
+                <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+                    <div class="bg-gray-900 p-3 rounded">
+                        <span class="block text-xs text-gray-400">Lado</span>
+                        <span id="pos-side" class="font-bold text-green-400">--</span>
+                    </div>
+                    <div class="bg-gray-900 p-3 rounded">
+                        <span class="block text-xs text-gray-400">Precio Entrada</span>
+                        <span id="pos-entry" class="font-mono">0.00</span>
+                    </div>
+                    <div class="bg-gray-900 p-3 rounded">
+                        <span class="block text-xs text-gray-400">Recompras (DCA)</span>
+                        <span id="pos-dca" class="font-bold">0</span>
+                    </div>
+                    <div class="bg-gray-900 p-3 rounded"
+                        title="Lo que pagarás o recibirás si dejas la operación abierta hasta el próximo conteo de 8h">
+                        <span class="block text-xs text-gray-400">Financiación Est.</span>
+                        <span id="pos-funding" class="font-mono font-bold text-gray-300">0.00 USDT</span>
+                    </div>
+                    <div class="bg-gray-900 p-3 rounded border border-gray-700">
+                        <span class="block text-xs text-gray-400">PNL Flotante</span>
+                        <span id="pos-pnl" class="font-mono font-bold text-lg text-green-400">$0.00</span>
+                    </div>
+                </div>
+
+                <!-- NUEVO: Barra de Progreso Visual TP/SL -->
+                <div class="bg-gray-900 p-4 rounded border border-gray-700">
+                    <div class="flex justify-between text-xs font-bold mb-2">
+                        <span class="text-red-400">SL: <span id="pos-sl" class="font-mono">0.00</span></span>
+                        <span class="text-gray-400 text-[10px] uppercase tracking-widest hidden md:inline">Distancia al
+                            Objetivo</span>
+                        <span class="text-green-400">TP: <span id="pos-tp" class="font-mono">0.00</span></span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-3 relative mt-1">
+                        <!-- Barra de Relleno que se mueve -->
+                        <div id="pos-progress-bar" class="bg-blue-500 h-3 rounded-full transition-all duration-500"
+                            style="width: 50%"></div>
+                        <!-- Marcador Blanco (Línea de Entrada) -->
+                        <div id="pos-entry-marker" class="absolute top-[-4px] h-5 w-1 bg-white rounded shadow z-10"
+                            style="left: 50%" title="Precio de Entrada"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NUEVO: Gráfico de TradingView e Indicadores -->
+        <div class="bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-700 md:col-span-3">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-300">Gráfico en Vivo y Señales</h2>
+                <div class="flex space-x-3 mt-2 md:mt-0 text-sm font-mono">
+                    <span class="bg-gray-900 border border-gray-700 px-3 py-1 rounded">RSI: <span id="ind-rsi"
+                            class="font-bold text-blue-400">0.00</span></span>
+                    <span class="bg-gray-900 border border-gray-700 px-3 py-1 rounded">BB Superior: <span id="ind-bbup"
+                            class="font-bold text-red-400">0.00</span></span>
+                    <span class="bg-gray-900 border border-gray-700 px-3 py-1 rounded">BB Inferior: <span id="ind-bblow"
+                            class="font-bold text-green-400">0.00</span></span>
+                </div>
+            </div>
+            <!-- Contenedor del Gráfico -->
+            <div id="tvchart" class="w-full h-[350px] rounded overflow-hidden"></div>
+        </div>
+
+        <!-- HISTORIAL DE TRADES -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700 md:col-span-3">
+            <h2 class="text-lg font-semibold mb-4 text-gray-300">Historial de Operaciones</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-400">
+                    <thead class="text-xs text-gray-300 uppercase bg-gray-700">
+                        <tr>
+                            <th class="px-4 py-2">Fecha</th>
+                            <th class="px-4 py-2">N° Orden</th>
+                            <th class="px-4 py-2">Lado</th>
+                            <th class="px-4 py-2">Entrada</th>
+                            <th class="px-4 py-2">Salida</th>
+                            <th class="px-4 py-2">Monto (Qty)</th>
+                            <th class="px-4 py-2">DCA</th>
+                            <th class="px-4 py-2 text-right">PNL (USDT)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trades-table-body">
+                        <!-- Las filas se llenan con JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            <div class="flex justify-between items-center mt-4">
+                <button id="btn-prev" onclick="changePage(-1)"
+                    class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm disabled:opacity-50">Anterior</button>
+                <span id="page-info" class="text-sm text-gray-400">Página 1 de 1</span>
+                <button id="btn-next" onclick="changePage(1)"
+                    class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm disabled:opacity-50">Siguiente</button>
+            </div>
+        </div>
+
+        <!-- Consola de Logs -->
+        <div class="bg-black p-4 rounded-lg shadow-lg border border-gray-700 md:col-span-3">
+            <h2 class="text-sm font-semibold mb-2 text-gray-400 flex items-center">
+                Terminal (Logs en vivo)
+            </h2>
+            <div id="logs-container"
+                class="h-48 overflow-y-auto font-mono text-xs text-green-500 bg-gray-900 p-2 rounded">
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        let chart;
+        let candleSeries;
+        let upperBBSeries;
+        let lowerBBSeries;
+
+        function formatNum(value, decimals) {
+            return Number(value).toLocaleString('en-US', {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        }
+
+        // 1. Inicializar Gráfico
+        async function initChart() {
+            const container = document.getElementById('tvchart');
+            chart = LightweightCharts.createChart(container, {
+                layout: { textColor: '#d1d5db', background: { type: 'solid', color: '#111827' } },
+                grid: { vertLines: { color: '#374151', style: 1 }, horzLines: { color: '#374151', style: 1 } },
+                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+                rightPriceScale: { borderColor: '#374151' },
+                timeScale: { borderColor: '#374151', timeVisible: true, secondsVisible: false }
+            });
+
+            candleSeries = chart.addCandlestickSeries({
+                upColor: '#22c55e', downColor: '#ef4444', borderVisible: false,
+                wickUpColor: '#22c55e', wickDownColor: '#ef4444'
+            });
+            upperBBSeries = chart.addLineSeries({
+                color: 'rgba(239, 68, 68, 0.8)', // Línea roja
+                lineWidth: 2,
+                crosshairMarkerVisible: false
+            });
+            lowerBBSeries = chart.addLineSeries({
+                color: 'rgba(34, 197, 94, 0.8)', // Línea verde
+                lineWidth: 2,
+                crosshairMarkerVisible: false
+            });
+
+            try {
+                const res = await fetch('/api/chart_data');
+                const data = await res.json();
+                candleSeries.setData(data.klines);
+                upperBBSeries.setData(data.bb_upper);
+                lowerBBSeries.setData(data.bb_lower);
+            } catch (err) { console.error("Error al cargar gráfico:", err); }
+        }
+
+        // 2. Traer información en vivo (Bot status, Indicators, Current Candle)
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+
+                // --- Actualizar Gráfico y Valores ---
+                if (data.current_candle && candleSeries) {
+                    candleSeries.update(data.current_candle);
+                    if (data.indicators && data.indicators.upper_bb > 0) {
+                        upperBBSeries.update({ time: data.current_candle.time, value: data.indicators.upper_bb });
+                        lowerBBSeries.update({ time: data.current_candle.time, value: data.indicators.lower_bb });
+                    }
+                }
+                if (data.indicators) {
+                    document.getElementById('ind-rsi').textContent = data.indicators.rsi.toFixed(2);
+                    document.getElementById('ind-bbup').textContent = formatNum(data.indicators.upper_bb, 4);
+                    document.getElementById('ind-bblow').textContent = formatNum(data.indicators.lower_bb, 4);
+                }
+
+                document.getElementById('last-price').textContent = `$${formatNum(data.last_price, 4)}`;
+
+                // --- Control UI ---
+                const badge = document.getElementById('status-badge');
+                const btn = document.getElementById('toggle-btn');
+
+                if (data.is_running) {
+                    badge.textContent = "CORRIENDO";
+                    badge.className = "px-3 py-1 bg-green-900 text-green-300 rounded-full text-sm font-bold animate-pulse";
+                    btn.textContent = "DETENER BOT";
+                    btn.className = "w-full py-3 bg-red-600 hover:bg-red-500 rounded font-bold transition-colors";
+                } else {
+                    badge.textContent = "DETENIDO";
+                    badge.className = "px-3 py-1 bg-red-900 text-red-300 rounded-full text-sm font-bold";
+                    btn.textContent = "INICIAR BOT";
+                    btn.className = "w-full py-3 bg-blue-600 hover:bg-blue-500 rounded font-bold transition-colors";
+                }
+
+                document.getElementById('balance').textContent = `$${formatNum(data.balance, 2)}`;
+
+                // --- Posición Activa ---
+                if (data.position) {
+                    document.getElementById('no-position').classList.add('hidden');
+                    document.getElementById('active-position').classList.remove('hidden');
+
+                    const sideEl = document.getElementById('pos-side');
+                    sideEl.textContent = data.position.side;
+                    sideEl.className = data.position.side === 'LONG' ? 'font-bold text-green-400' : 'font-bold text-red-400';
+
+                    document.getElementById('pos-entry').textContent = formatNum(data.position.entry_price, 4);
+                    document.getElementById('pos-dca').textContent = data.position.dca_count;
+
+                    const pnlEl = document.getElementById('pos-pnl');
+                    pnlEl.textContent = `$${formatNum(data.unrealized_pnl, 2)}`;
+                    pnlEl.className = data.unrealized_pnl >= 0 ? 'font-mono font-bold text-lg text-green-400' : 'font-mono font-bold text-lg text-red-400';
+
+                    // --- NUEVO: Actualizar Financiación Estimada ---
+                    const fundingEl = document.getElementById('pos-funding');
+                    const fundingFee = data.position.est_funding_fee || 0;
+
+                    const fundingSign = fundingFee > 0 ? '+' : '';
+                    fundingEl.textContent = `${fundingSign}${formatNum(fundingFee, 4)} USDT`;
+
+                    if (fundingFee > 0) {
+                        fundingEl.className = 'font-mono font-bold text-green-400';
+                    } else if (fundingFee < 0) {
+                        fundingEl.className = 'font-mono font-bold text-red-400';
+                    } else {
+                        fundingEl.className = 'font-mono font-bold text-gray-400';
+                    }
+
+                    // --- NUEVO: Lógica de la Barra de Progreso ---
+                    const sl = data.position.sl_price;
+                    const tp = data.position.tp_price;
+                    const entry = data.position.entry_price;
+                    const current = data.last_price;
+
+                    document.getElementById('pos-sl').textContent = formatNum(sl, 4);
+                    document.getElementById('pos-tp').textContent = formatNum(tp, 4);
+
+                    //let totalRange = Math.abs(tp - sl);
+                    let currentProgress = 50;
+                    let entryPosition = 50;
+
+                    if (data.position.side === 'LONG') {
+                        if (current >= entry) {
+                            // Ganando: La barra crece del 50% hacia el 100%
+                            let progress = (current - entry) / (tp - entry);
+                            currentProgress = 50 + (progress * 50);
+                        } else {
+                            // Perdiendo: La barra retrocede del 50% hacia el 0%
+                            let progress = (entry - current) / (entry - sl);
+                            currentProgress = 50 - (progress * 50);
+                        }
+                    } else { // SHORT
+                        if (current <= entry) {
+                            // Ganando (precio actual es MENOR a la entrada): crece al 100%
+                            let progress = (entry - current) / (entry - tp);
+                            currentProgress = 50 + (progress * 50);
+                        } else {
+                            // Perdiendo (precio actual es MAYOR a la entrada): retrocede al 0%
+                            let progress = (current - entry) / (sl - entry);
+                            currentProgress = 50 - (progress * 50);
+                        }
+                    }
+
+                    // Evitar que la barra se salga de los bordes gráficos (0 a 100%)
+                    currentProgress = Math.max(0, Math.min(100, currentProgress));
+                    entryPosition = Math.max(0, Math.min(100, entryPosition));
+
+                    // Actualizar el DOM
+                    const bar = document.getElementById('pos-progress-bar');
+                    bar.style.width = `${currentProgress}%`;
+                    document.getElementById('pos-entry-marker').style.left = `${entryPosition}%`;
+
+                    // Cambiar color: Verde si estamos ganando (a la derecha de la entrada), Rojo si estamos perdiendo
+                    if (currentProgress >= entryPosition) {
+                        bar.className = "bg-green-500 h-3 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]";
+                    } else {
+                        bar.className = "bg-red-500 h-3 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]";
+                    }
+                } else {
+                    document.getElementById('no-position').classList.remove('hidden');
+                    document.getElementById('active-position').classList.add('hidden');
+                }
+            } catch (err) { }
+        }
+
+        async function fetchLogs() {
+            try {
+                const res = await fetch('/api/logs');
+                const data = await res.json();
+                const container = document.getElementById('logs-container');
+                container.innerHTML = data.logs.join('<br>');
+                container.scrollTop = container.scrollHeight;
+            } catch (err) { }
+        }
+
+        let currentPage = 1;
+        let totalPages = 1;
+
+        async function fetchTrades() {
+            try {
+                const res = await fetch(`/api/trades?page=${currentPage}&limit=5`);
+                const data = await res.json();
+
+                totalPages = data.total_pages;
+                document.getElementById('page-info').textContent = `Página ${currentPage} de ${totalPages}`;
+
+                document.getElementById('btn-prev').disabled = currentPage === 1;
+                document.getElementById('btn-next').disabled = currentPage === totalPages;
+
+                const tbody = document.getElementById('trades-table-body');
+                tbody.innerHTML = ''; // Limpiar tabla
+
+                if (data.trades.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4">Aún no hay operaciones cerradas.</td></tr>`;
+                    return;
+                }
+
+                data.trades.forEach(t => {
+                    // Colorear lado
+                    const sideColor = t.side === 'LONG' ? 'text-green-400' : 'text-red-400';
+                    // Colorear PNL
+                    const pnlColor = t.pnl >= 0 ? 'text-green-400' : 'text-red-400';
+                    const pnlSign = t.pnl > 0 ? '+' : '';
+
+                    const row = `
+                        <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                            <td class="px-4 py-2 whitespace-nowrap">${t.timestamp}</td>
+                            <td class="px-4 py-2 font-mono text-xs text-gray-500">${t.order_id}</td>
+                            <td class="px-4 py-2 font-bold ${sideColor}">${t.side}</td>
+                            <td class="px-4 py-2 font-mono">${formatNum(t.entry_price, 4)}</td>
+                            <td class="px-4 py-2 font-mono">${formatNum(t.exit_price, 4)}</td>
+                            <td class="px-4 py-2 font-mono">${formatNum(t.qty, 4)}</td>
+                            <td class="px-4 py-2 font-bold text-blue-400">${t.dca_count}</td>
+                            <td class="px-4 py-2 font-mono font-bold text-right ${pnlColor}">
+                                ${pnlSign}$${formatNum(t.pnl, 2)}
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } catch (err) { }
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            fetchTrades();
+        }
+
+        async function toggleBot() {
+            await fetch('/api/toggle', { method: 'POST' });
+            fetchStatus();
+        }
+
+        // --- Inicio de la App ---
+        initChart().then(() => {
+            fetchStatus();
+            fetchLogs();
+            fetchTrades();
+            setInterval(fetchStatus, 1500);
+            setInterval(fetchLogs, 2000);
+            setInterval(fetchTrades, 5000);
+        });
+    </script>
+</body>
+
+</html>

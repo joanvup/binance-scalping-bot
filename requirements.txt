@@ -1,0 +1,10 @@
+python-binance
+fastapi
+uvicorn
+pandas
+pandas-ta
+python-dotenv
+pydantic-settings
+sqlalchemy
+websockets
+jinja2
