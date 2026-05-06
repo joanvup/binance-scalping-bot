@@ -39,9 +39,27 @@ Sistema de trading algorítmico asíncrono para **Binance Futures (USDT-M)**, di
 
 Crea un archivo .env en la raíz del proyecto con las siguientes variables:
 ```bash
-BINANCE_API_KEY=tu_api_key
-BINANCE_API_SECRET=tu_api_secret
-BINANCE_IS_TESTNET=True
+# MODOS: TESTNET, DRY_RUN, LIVE
+EXECUTION_MODE=TESTNET
+
+# CREDENCIALES LIVE (Reales)
+BINANCE_API_KEY_LIVE=tu_api_key_live
+BINANCE_API_SECRET_LIVE=tu_api_secret_live
+
+# CREDENCIALES TESTNET - Se obtienen en testnet.binancefuture.com
+BINANCE_API_KEY_TESTNET=tu_api_key_testnet
+BINANCE_API_SECRET_TESTNET=tu_api_secret_testnet
+
+# CONFIGURACIÓN DE TRADING (Valores por defecto del dashboard)
+#SYMBOL=HBARUSDT
+SYMBOL=ETHUSDT
+TIMEFRAME=5m
+LEVERAGE=10
+TAKE_PROFIT_PCT=1.0
+DCA_DROP_PCT=2.0
+MAX_RISK_PCT=10.0
+# Margen inicial en USDT por cada operación (primer disparo)
+INITIAL_USDT_MARGIN=50.0
 ```
 
 3. **Ejecución**
