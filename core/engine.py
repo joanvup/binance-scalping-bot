@@ -51,7 +51,7 @@ class TradingEngine:
             })
             # TradingView necesita el tiempo en formato Unix Timestamp (segundos)
             chart_data.append({
-                'time': int(k[0] // 1000) + self.tz_offset_seconds,
+                'time': int(k[0] // 1000),
                 'open': float(k[1]), 'high': float(k[2]),
                 'low': float(k[3]), 'close': float(k[4])
             })
@@ -64,7 +64,7 @@ class TradingEngine:
         bb_up = []
         bb_low =[]
         for _, row in self.df.iterrows():
-            t = int(row['timestamp'].timestamp()) + self.tz_offset_seconds
+            t = int(row['timestamp'].timestamp()) 
             if not pd.isna(row['upper_bb']):
                 bb_up.append({'time': t, 'value': float(row['upper_bb'])})
             if not pd.isna(row['lower_bb']):
@@ -360,7 +360,7 @@ class TradingEngine:
 
                             # --- Actualizar Vela Actual ---
                             state.current_candle = {
-                                'time': int(kline['t'] // 1000) + self.tz_offset_seconds,
+                                'time': int(kline['t'] // 1000),
                                 'open': float(kline['o']), 'high': float(kline['h']),
                                 'low': float(kline['l']), 'close': float(kline['c'])
                             }
@@ -397,7 +397,7 @@ class TradingEngine:
 
                                 # Actualizar historial de líneas BB para el gráfico web
                                 last_row = self.df.iloc[-1]
-                                close_time = int(last_row['timestamp'].timestamp()) + self.tz_offset_seconds
+                                close_time = int(last_row['timestamp'].timestamp())
 
                                 if not pd.isna(last_row['upper_bb']):
                                     state.historical_bb_upper.append({'time': close_time, 'value': float(last_row['upper_bb'])})
