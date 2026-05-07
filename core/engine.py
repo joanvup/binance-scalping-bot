@@ -15,6 +15,7 @@ import websockets
 class TradingEngine:
     def __init__(self):
         self.symbol = settings.SYMBOL
+        self.timesync = settings.TIMESYNCDATE
         self.interval = settings.TIMEFRAME
         self.mode = settings.EXECUTION_MODE.upper()
         self.indicator_calc = IndicatorCalculator()
@@ -25,6 +26,7 @@ class TradingEngine:
         self.dca_pct = settings.DCA_DROP_PCT / 100.0
         self.max_risk_pct = settings.MAX_RISK_PCT / 100.0
         self.initial_usdt_margin = settings.INITIAL_USDT_MARGIN
+        self.initial_balance_dryrun = settings.INITIAL_BALANCE_DRYRUN
 
     async def fetch_historical_data(self):
         logger.info(f"Descargando datos históricos para {self.symbol} ({self.interval})...")
@@ -288,7 +290,7 @@ class TradingEngine:
             if self.mode != "DRY_RUN" and state.is_running:
                 try:
                     # 1. Sincronizar el reloj local cada 60 minutos (10 loops de 60 segundos)
-                    if loop_count % 60 == 0:
+                    if loop_count % self.timesync == 0:
                         await binance_manager.sync_time()
 
                     # 2. Consultar Funding
@@ -319,7 +321,7 @@ class TradingEngine:
             state.balance = float(acc_info['totalMarginBalance'])
             await self.recover_open_position()
         else:
-            state.balance = 300.0
+            state.balance = self.initial_balance_dryrun
 
         asyncio.create_task(self._update_funding_loop())
 
@@ -376,7 +378,7 @@ class TradingEngine:
                             # --- Cerrar Vela y recalcular indicadores ---
                             if is_kline_closed:
                                 state.historical_klines.append(state.current_candle)
-                                if len(state.historical_klines) > 100:
+                                if len(state.historical_klines) > 100: # MANTENER LAS ULTIMAS 100 VELAS PARA EL RSI(14)
                                     state.historical_klines.pop(0)
 
                                 new_row = {

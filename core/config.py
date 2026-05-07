@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # App Settings
     EXECUTION_MODE: str = "TESTNET" # TESTNET, DRY_RUN, LIVE
+    TIMESYNCDATE:int = 60 # sincronizar fecha y hora cada 60 segundos
     
     # Binance Live
     BINANCE_API_KEY_LIVE: str = ""
@@ -21,6 +22,8 @@ class Settings(BaseSettings):
     DCA_DROP_PCT: float = 2.0      # Distancia de caída para recomprar
     MAX_RISK_PCT: float = 10.0     # 10% del balance de la cuenta como stop loss
     INITIAL_USDT_MARGIN: float = 50.0
+    INITIAL_BALANCE_DRYRUN: float = 100.0 # Balance inicial para el modo DRY_RUN
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     @property
