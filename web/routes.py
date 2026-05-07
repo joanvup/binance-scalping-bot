@@ -26,7 +26,8 @@ async def get_chart_data():
     return {
         "klines": state.historical_klines,
         "bb_upper": state.historical_bb_upper,
-        "bb_lower": state.historical_bb_lower
+        "bb_lower": state.historical_bb_lower,
+        "rsi": state.historical_rsi
     }
 
 @router.get("/api/status")

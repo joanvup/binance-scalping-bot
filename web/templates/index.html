@@ -117,6 +117,8 @@
             </div>
             <!-- Contenedor del Gráfico -->
             <div id="tvchart" class="w-full h-[350px] rounded overflow-hidden"></div>
+            <!-- NUEVO: Contenedor del Gráfico RSI -->
+            <div id="rsichart" class="w-full h-[150px] overflow-hidden border-t border-gray-700"></div>
         </div>
 
         <!-- HISTORIAL DE TRADES -->
@@ -169,6 +171,8 @@
         let candleSeries;
         let upperBBSeries;
         let lowerBBSeries;
+        let rsiChart;
+        let rsiSeries;
 
         // Calcula la diferencia de tiempo de tu navegador automáticamente (en segundos)
         const tzOffset = new Date().getTimezoneOffset() * 60;
@@ -205,6 +209,33 @@
                 lineWidth: 2,
                 crosshairMarkerVisible: false
             });
+            // --- NUEVO: Crear el panel del RSI ---
+            const rsiContainer = document.getElementById('rsichart');
+            rsiChart = LightweightCharts.createChart(rsiContainer, {
+                layout: { textColor: '#d1d5db', background: { type: 'solid', color: '#111827' } },
+                grid: { vertLines: { color: '#374151', style: 1 }, horzLines: { color: '#374151', style: 1 } },
+                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+                rightPriceScale: { borderColor: '#374151' },
+                timeScale: { visible: false } // Ocultamos el tiempo aquí para no repetir el de arriba
+            });
+
+            rsiSeries = rsiChart.addLineSeries({
+                color: '#60a5fa', // Línea azul clara
+                lineWidth: 2,
+                crosshairMarkerVisible: false
+            });
+
+            // Añadir las líneas punteadas de Sobrecompra (70) y Sobreventa (30)
+            rsiSeries.createPriceLine({ price: 70, color: 'rgba(239, 68, 68, 0.5)', lineWidth: 1, lineStyle: 2, title: '70' });
+            rsiSeries.createPriceLine({ price: 30, color: 'rgba(34, 197, 94, 0.5)', lineWidth: 1, lineStyle: 2, title: '30' });
+
+            // Sincronizar el desplazamiento y zoom de ambos gráficos
+            chart.timeScale().subscribeVisibleLogicalRangeChange(timeRange => {
+                if (timeRange) rsiChart.timeScale().setVisibleLogicalRange(timeRange);
+            });
+            rsiChart.timeScale().subscribeVisibleLogicalRangeChange(timeRange => {
+                if (timeRange) chart.timeScale().setVisibleLogicalRange(timeRange);
+            });
 
             try {
                 const res = await fetch('/api/chart_data');
@@ -214,10 +245,12 @@
                 const localKlines = data.klines.map(d => ({ ...d, time: d.time - tzOffset }));
                 const localBBUp = data.bb_upper.map(d => ({ ...d, time: d.time - tzOffset }));
                 const localBBLow = data.bb_lower.map(d => ({ ...d, time: d.time - tzOffset }));
+                const localRSI = data.rsi.map(d => ({ ...d, time: d.time - tzOffset }));
 
                 candleSeries.setData(localKlines);
                 upperBBSeries.setData(localBBUp);
                 lowerBBSeries.setData(localBBLow);
+                rsiSeries.setData(localRSI);
             } catch (err) { console.error("Error al cargar gráfico:", err); }
         }
 

@@ -11,6 +11,7 @@ class BotState:
         self.historical_klines =[] # Guarda las últimas 100 velas
         self.historical_bb_upper = [] 
         self.historical_bb_lower =[]
+        self.historical_rsi =[]
         # --- NUEVO: Financiación (Funding) ---
         self.funding_rate: float = 0.0
         self.est_funding_fee: float = 0.0

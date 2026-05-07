@@ -63,15 +63,19 @@ class TradingEngine:
         # --- NUEVO: Extraer historial para dibujar las líneas BB ---
         bb_up = []
         bb_low =[]
+        rsi_data =[] 
         for _, row in self.df.iterrows():
             t = int(row['timestamp'].timestamp()) 
             if not pd.isna(row['upper_bb']):
                 bb_up.append({'time': t, 'value': float(row['upper_bb'])})
             if not pd.isna(row['lower_bb']):
                 bb_low.append({'time': t, 'value': float(row['lower_bb'])})
+            if not pd.isna(row['rsi']): 
+                rsi_data.append({'time': t, 'value': float(row['rsi'])})
                 
         state.historical_bb_upper = bb_up
         state.historical_bb_lower = bb_low
+        state.historical_rsi = rsi_data
 
     def _save_trade_to_db(self, side: str, entry: float, exit_price: float, qty: float, pnl: float, dca: int, order_id: str):
         """Guarda un trade completado en la base de datos SQLite"""
@@ -406,6 +410,9 @@ class TradingEngine:
                                 if not pd.isna(last_row['lower_bb']):
                                     state.historical_bb_lower.append({'time': close_time, 'value': float(last_row['lower_bb'])})
                                     if len(state.historical_bb_lower) > 100: state.historical_bb_lower.pop(0)
+                                if not pd.isna(last_row['rsi']):
+                                    state.historical_rsi.append({'time': close_time, 'value': float(last_row['rsi'])})
+                                    if len(state.historical_rsi) > 100: state.historical_rsi.pop(0)
 
             except Exception as e:
                 logger.error(f"Red desconectada o error en el Stream: {e}. Reconectando en 5 segundos...")
