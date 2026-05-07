@@ -7,6 +7,7 @@ from core.config import settings
 from database.models import SessionLocal, TradeHistory
 from sqlalchemy import desc
 import math
+import pytz
 
 router = APIRouter()
 templates = Jinja2Templates(directory="web/templates")
@@ -100,12 +101,18 @@ async def get_trades(page: int = 1, limit: int = 5):
         # Traemos los trades más recientes primero
         trades = db.query(TradeHistory).order_by(desc(TradeHistory.timestamp)).offset(offset).limit(limit).all()
         
+        # --- CORRECCIÓN: Convertimos la hora local (que viene en UTC) a la zona del .env ---
+        tz = pytz.timezone(settings.TIMEZONE)
         trades_data =[]
         for t in trades:
+            # Convertimos la fecha UTC de la base de datos a la fecha local configurada
+            utc_dt = t.timestamp.replace(tzinfo=pytz.utc)
+            local_dt = utc_dt.astimezone(tz)
+
             trades_data.append({
                 "id": t.id,
                 "order_id": t.order_id,
-                "timestamp": t.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                "timestamp": local_dt.strftime("%Y-%m-%d %H:%M:%S"), 
                 "symbol": t.symbol,
                 "side": t.side,
                 "entry_price": t.entry_price,

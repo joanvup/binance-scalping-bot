@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # App Settings
+    TIMEZONE: str = "America/Bogota"
     EXECUTION_MODE: str = "TESTNET" # TESTNET, DRY_RUN, LIVE
     TIMESYNCDATE:int = 60 # sincronizar fecha y hora cada 60 segundos
     

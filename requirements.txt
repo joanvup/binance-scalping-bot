@@ -8,3 +8,4 @@ pydantic-settings
 sqlalchemy
 websockets
 jinja2
+pytz
