@@ -170,6 +170,9 @@
         let upperBBSeries;
         let lowerBBSeries;
 
+        // Calcula la diferencia de tiempo de tu navegador automáticamente (en segundos)
+        const tzOffset = new Date().getTimezoneOffset() * 60;
+
         function formatNum(value, decimals) {
             return Number(value).toLocaleString('en-US', {
                 minimumFractionDigits: decimals,
@@ -206,9 +209,15 @@
             try {
                 const res = await fetch('/api/chart_data');
                 const data = await res.json();
-                candleSeries.setData(data.klines);
-                upperBBSeries.setData(data.bb_upper);
-                lowerBBSeries.setData(data.bb_lower);
+
+                // Restamos el offset para que el gráfico baje de UTC a tu hora local
+                const localKlines = data.klines.map(d => ({ ...d, time: d.time - tzOffset }));
+                const localBBUp = data.bb_upper.map(d => ({ ...d, time: d.time - tzOffset }));
+                const localBBLow = data.bb_lower.map(d => ({ ...d, time: d.time - tzOffset }));
+
+                candleSeries.setData(localKlines);
+                upperBBSeries.setData(localBBUp);
+                lowerBBSeries.setData(localBBLow);
             } catch (err) { console.error("Error al cargar gráfico:", err); }
         }
 
@@ -220,10 +229,16 @@
 
                 // --- Actualizar Gráfico y Valores ---
                 if (data.current_candle && candleSeries) {
-                    candleSeries.update(data.current_candle);
+                    // Aplicar el desfase a la vela actual
+                    const localTime = data.current_candle.time - tzOffset;
+                    const localCandle = { ...data.current_candle, time: localTime };
+
+                    candleSeries.update(localCandle);
+
+                    // --- Mover las líneas BB en tiempo real ---
                     if (data.indicators && data.indicators.upper_bb > 0) {
-                        upperBBSeries.update({ time: data.current_candle.time, value: data.indicators.upper_bb });
-                        lowerBBSeries.update({ time: data.current_candle.time, value: data.indicators.lower_bb });
+                        upperBBSeries.update({ time: localTime, value: data.indicators.upper_bb });
+                        lowerBBSeries.update({ time: localTime, value: data.indicators.lower_bb });
                     }
                 }
                 if (data.indicators) {
