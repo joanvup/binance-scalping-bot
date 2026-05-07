@@ -11,6 +11,7 @@ from database.models import SessionLocal, TradeHistory
 from datetime import datetime
 import json
 import websockets
+import pytz
 
 class TradingEngine:
     def __init__(self):
