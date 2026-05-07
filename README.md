@@ -26,7 +26,7 @@ Sistema de trading algorítmico asíncrono para **Binance Futures (USDT-M)**, di
 1. **Clonar el repositorio:**
 
 ```bash
-   git clone https://github.com/TU_USUARIO/binance-scalping-bot.git
+   git clone https://github.com/joanvup/binance-scalping-bot.git
    cd binance-scalping-bot
 
    python -m venv venv
@@ -37,30 +37,8 @@ Sistema de trading algorítmico asíncrono para **Binance Futures (USDT-M)**, di
 
 2. **Configuración:**
 
-Crea un archivo .env en la raíz del proyecto con las siguientes variables:
-```bash
-# MODOS: TESTNET, DRY_RUN, LIVE
-EXECUTION_MODE=TESTNET
+Copia el archivo .env.example a .env y completa las variables:
 
-# CREDENCIALES LIVE (Reales)
-BINANCE_API_KEY_LIVE=tu_api_key_live
-BINANCE_API_SECRET_LIVE=tu_api_secret_live
-
-# CREDENCIALES TESTNET - Se obtienen en testnet.binancefuture.com
-BINANCE_API_KEY_TESTNET=tu_api_key_testnet
-BINANCE_API_SECRET_TESTNET=tu_api_secret_testnet
-
-# CONFIGURACIÓN DE TRADING (Valores por defecto del dashboard)
-#SYMBOL=HBARUSDT
-SYMBOL=ETHUSDT
-TIMEFRAME=5m
-LEVERAGE=10
-TAKE_PROFIT_PCT=1.0
-DCA_DROP_PCT=2.0
-MAX_RISK_PCT=10.0
-# Margen inicial en USDT por cada operación (primer disparo)
-INITIAL_USDT_MARGIN=50.0
-```
 
 3. **Ejecución**
 ```bash
@@ -113,8 +91,19 @@ http://localhost:8000
 
 ## ⚙️ Parámetros del Bot
 - EXECUTION_MODE: TESTNET (Pruebas), DRY_RUN (Simulación real), LIVE (Trading real).
-- INITIAL_USDT_MARGIN: Monto base de inversión por operación.
+- TIMESYNCDATE: Tiempo en segundos para sincronizar la fecha del bot con la del servidor.
+- BINANCE_API_KEY_LIVE: API Key para modo LIVE.
+- BINANCE_API_SECRET_LIVE: API Secret para modo LIVE.
+- BINANCE_API_KEY_TESTNET: API Key para modo TESTNET.
+- BINANCE_API_SECRET_TESTNET: API Secret para modo TESTNET.
+- SYMBOL: Símbolo a operar.
+- TIMEFRAME: Timeframe de las velas.
 - LEVERAGE: Apalancamiento configurado para el símbolo.
+- TAKE_PROFIT_PCT: Take Profit en porcentaje.
+- DCA_DROP_PCT: Descuento en porcentaje para el siguiente nivel de DCA.
 - MAX_RISK_PCT: Porcentaje del balance total que el bot arriesgará antes de ejecutar un Stop Loss global.
+- INITIAL_USDT_MARGIN: Monto base de inversión por operación.
+- INITIAL_BALANCE_DRYRUN: Balance inicial para el modo DRY_RUN.
+
 ## ⚠️ Aviso de Riesgo
 Este software se proporciona "tal cual" y sin garantía de rentabilidad. El trading de criptomonedas y futuros implica un alto riesgo de pérdida de capital. Úselo primero en entornos de prueba (TESTNET o DRY_RUN) para validar su estrategia antes de operar con fondos reales.
