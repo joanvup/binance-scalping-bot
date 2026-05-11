@@ -421,23 +421,33 @@
                 }
 
                 data.trades.forEach(t => {
-                    // Colorear lado
-                    const sideColor = t.side === 'LONG' ? 'text-green-400' : 'text-red-400';
-                    // Colorear PNL
+                    // Elegir color según el lado de la operación
+                    let sideColor = 'text-gray-400';
+                    if (t.side === 'LONG') sideColor = 'text-green-400';
+                    else if (t.side === 'SHORT') sideColor = 'text-red-400';
+                    else if (t.side === 'COMISIÓN') sideColor = 'text-yellow-400';
+
                     const pnlColor = t.pnl >= 0 ? 'text-green-400' : 'text-red-400';
                     const pnlSign = t.pnl > 0 ? '+' : '';
+
+                    // Ocultar los números si es una fila de comisión
+                    const isCom = t.side === 'COMISIÓN';
+                    const entryText = isCom ? '-' : formatNum(t.entry_price, 4);
+                    const exitText = isCom ? '-' : formatNum(t.exit_price, 4);
+                    const qtyText = isCom ? '-' : formatNum(t.qty, 4);
+                    const dcaText = isCom ? '-' : `<span class="text-blue-400">${t.dca_count}</span>`;
 
                     const row = `
                         <tr class="border-b border-gray-700 hover:bg-gray-700/50">
                             <td class="px-4 py-2 whitespace-nowrap">${t.timestamp}</td>
                             <td class="px-4 py-2 font-mono text-xs text-gray-500">${t.order_id}</td>
                             <td class="px-4 py-2 font-bold ${sideColor}">${t.side}</td>
-                            <td class="px-4 py-2 font-mono">${formatNum(t.entry_price, 4)}</td>
-                            <td class="px-4 py-2 font-mono">${formatNum(t.exit_price, 4)}</td>
-                            <td class="px-4 py-2 font-mono">${formatNum(t.qty, 4)}</td>
-                            <td class="px-4 py-2 font-bold text-blue-400">${t.dca_count}</td>
+                            <td class="px-4 py-2 font-mono">${entryText}</td>
+                            <td class="px-4 py-2 font-mono">${exitText}</td>
+                            <td class="px-4 py-2 font-mono">${qtyText}</td>
+                            <td class="px-4 py-2 font-bold">${dcaText}</td>
                             <td class="px-4 py-2 font-mono font-bold text-right ${pnlColor}">
-                                ${pnlSign}$${formatNum(t.pnl, 2)}
+                                ${pnlSign}$${formatNum(t.pnl, 4)} <!-- PNL a 4 decimales para mayor precisión -->
                             </td>
                         </tr>
                     `;

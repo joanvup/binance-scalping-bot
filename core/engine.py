@@ -139,7 +139,29 @@ class TradingEngine:
                 real_price = price
                 
             self.last_order_id = str(order['orderId'])
-            logger.info(f"Orden Live/Testnet ejecutada: {order['orderId']} | Precio REAL: {real_price}")
+            #logger.info(f"Orden Live/Testnet ejecutada: {order['orderId']} | Precio REAL: {real_price}")
+            logger.info(f"Orden Live/Testnet ejecutada: {self.last_order_id} | Precio REAL: {real_price}")
+            # Extraer la Comisión cobrada y guardarla como "Transacción"
+            if self.mode != "DRY_RUN":
+                try:
+                    await asyncio.sleep(0.5) # Esperar a que la comisión se procese
+                    trades = await binance_manager.client.futures_account_trades(symbol=self.symbol, orderId=order['orderId'])
+                    total_commission = sum(float(t['commission']) for t in trades)
+                    
+                    if total_commission > 0:
+                        # Guardamos la comisión directamente en la Base de Datos
+                        self._save_trade_to_db(
+                            side="COMISIÓN",
+                            entry=0.0,
+                            exit_price=0.0,
+                            qty=0.0,
+                            pnl=-total_commission, # Negativo porque nos resta dinero
+                            dca=0,
+                            order_id=str(order['orderId'])
+                        )
+                except Exception as e:
+                    logger.error(f"Error extrayendo comisión: {e}")
+            
             return real_price
             
         except BinanceAPIException as e:
@@ -301,6 +323,12 @@ class TradingEngine:
                     if loop_count % self.timesync == 0:
                         await binance_manager.sync_time()
 
+                    # Actualizar Balance Real de USDT en vivo
+                    acc_info = await binance_manager.client.futures_account()
+                    usdt_asset = next((a for a in acc_info['assets'] if a['asset'] == 'USDT'), None)
+                    if usdt_asset:
+                        state.balance = float(usdt_asset['walletBalance'])
+
                     # 2. Consultar Funding
                     mark_data = await binance_manager.client.futures_mark_price(symbol=self.symbol)
                     state.funding_rate = float(mark_data['lastFundingRate'])
@@ -326,7 +354,10 @@ class TradingEngine:
         
         if self.mode != "DRY_RUN":
             acc_info = await binance_manager.client.futures_account()
-            state.balance = float(acc_info['totalMarginBalance'])
+            # Extraemos EXCLUSIVAMENTE el balance de la billetera de USDT
+            usdt_asset = next((a for a in acc_info['assets'] if a['asset'] == 'USDT'), None)
+            if usdt_asset:
+                state.balance = float(usdt_asset['walletBalance'])
             await self.recover_open_position()
         else:
             state.balance = self.initial_balance_dryrun
