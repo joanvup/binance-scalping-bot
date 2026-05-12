@@ -12,6 +12,7 @@ from datetime import datetime
 import json
 import websockets
 import pytz
+import time
 
 class TradingEngine:
     def __init__(self):
@@ -31,6 +32,7 @@ class TradingEngine:
         # Calcular desfase en segundos para el gráfico
         self.tz = pytz.timezone(settings.TIMEZONE)
         self.tz_offset_seconds = self.tz.utcoffset(datetime.utcnow()).total_seconds()
+        self.last_income_check_time = int(time.time() * 1000)
 
     async def fetch_historical_data(self):
         logger.info(f"Descargando datos históricos para {self.symbol} ({self.interval})...")
@@ -328,6 +330,30 @@ class TradingEngine:
                     usdt_asset = next((a for a in acc_info['assets'] if a['asset'] == 'USDT'), None)
                     if usdt_asset:
                         state.balance = float(usdt_asset['walletBalance'])
+                    # Rastrear y Guardar Comisiones de Financiación (Funding Fees) Reales
+                    try:
+                        incomes = await binance_manager.client.futures_income_history(
+                            symbol=self.symbol,
+                            incomeType="FUNDING_FEE",
+                            startTime=self.last_income_check_time + 1 # +1 ms para evitar duplicados
+                        )
+                        for inc in incomes:
+                            inc_time = int(inc['time'])
+                            self.last_income_check_time = max(self.last_income_check_time, inc_time)
+                            
+                            amount = float(inc['income'])
+                            if amount != 0:
+                                self._save_trade_to_db(
+                                    side="FINANCIACIÓN",
+                                    entry=0.0,
+                                    exit_price=0.0,
+                                    qty=0.0,
+                                    pnl=amount, # Si es positivo nos pagaron, si es negativo nos cobraron
+                                    dca=0,
+                                    order_id=str(inc['tranId'])
+                                )
+                    except Exception as e:
+                        pass
 
                     # 2. Consultar Funding
                     mark_data = await binance_manager.client.futures_mark_price(symbol=self.symbol)

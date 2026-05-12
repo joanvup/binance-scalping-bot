@@ -426,12 +426,13 @@
                     if (t.side === 'LONG') sideColor = 'text-green-400';
                     else if (t.side === 'SHORT') sideColor = 'text-red-400';
                     else if (t.side === 'COMISIÓN') sideColor = 'text-yellow-400';
+                    else if (t.side === 'FINANCIACIÓN') sideColor = 'text-purple-400'; // Color especial
 
                     const pnlColor = t.pnl >= 0 ? 'text-green-400' : 'text-red-400';
                     const pnlSign = t.pnl > 0 ? '+' : '';
 
-                    // Ocultar los números si es una fila de comisión
-                    const isCom = t.side === 'COMISIÓN';
+                    // Ocultar los números si es un cobro administrativo
+                    const isCom = (t.side === 'COMISIÓN' || t.side === 'FINANCIACIÓN');
                     const entryText = isCom ? '-' : formatNum(t.entry_price, 4);
                     const exitText = isCom ? '-' : formatNum(t.exit_price, 4);
                     const qtyText = isCom ? '-' : formatNum(t.qty, 4);
